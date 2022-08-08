@@ -1,0 +1,835 @@
+<html>
+<body>
+<canvas id="myCanvas" height="600" width="800"></canvas>
+<script>
+     
+var g_can=document.getElementById("myCanvas");
+var g_ctx=g_can.getContext("2d");
+var g_squares=new Array(40);
+var g_keyInp=new Array(8);//0>left 1>right 2>up 3>down 4>left 5>right 6>up 7>down
+var g_squareWidth=20;
+var g_mouseInp=new Array(3); //0>Click (Flag) 1>clientX 2>clientY
+var g_menuData=[false,false,true,true,1]//0>play 1>settings 2>menu 3>home
+var g_colourArray=["FFD300"]
+var g_XposArray=new Array(400);
+var g_YposArray=new Array(400);
+var g_XposArray2=new Array(400);
+var g_YposArray2=new Array(400);
+var g_snake1StartX=550;
+var g_snake1StartY=450;
+var g_snake2StartX=200;
+var g_snake2StartY=150;
+var g_snakeSize=5;
+var g_snakeMaxSize=20;
+var g_noOfSnakes=2;
+var g_newPowerUpSet=false;
+var g_fps=1000/30;
+var g_isGameOver=false;
+var g_winner;
+var g_playerNumber=2;
+    
+//==============================Event Handlers====================================    
+document.addEventListener("keydown",f_keyDown);
+document.addEventListener("keyup",f_keyUp);
+document.addEventListener("mousemove",f_mouseMove);
+document.addEventListener("mousedown",f_mouseClick);
+document.addEventListener("mouseup",f_mouseRelease);
+    
+window.addEventListener("keydown", function(e) {
+    // space and arrow keys
+    if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+        e.preventDefault();
+    }
+}, false);
+    
+function f_mouseMove(e){
+    g_mouseInp[1]=e.clientX;
+    g_mouseInp[2]=e.clientY;
+}   
+function f_mouseClick(e){
+    g_mouseInp[0]=true;
+}   
+function f_mouseRelease(e){
+    g_mouseInp[0]=false;
+} 
+function f_keyDown(e){
+    //console.log(e.keyCode);
+    switch(e.keyCode){
+    case 37:
+        g_keyInp[0]=true;
+        break;
+    case 39:    
+        g_keyInp[1]=true;
+        break;
+    case 38:
+        g_keyInp[2]=true;
+        break;
+    case 40:    
+        g_keyInp[3]=true;
+        break;
+    case 65:
+        g_keyInp[4]=true;
+        break;
+    case 68:
+        g_keyInp[5]=true;
+        break;
+    case 87:
+        g_keyInp[6]=true;
+        break;
+    case 83:
+        g_keyInp[7]=true;
+        break;
+    case 32:
+        snake1.size++;
+        
+}  
+}
+function f_keyUp(e){
+    switch(e.keyCode){
+    case 37:
+        g_keyInp[0]=false;
+        break;
+    case 39:    
+        g_keyInp[1]=false;
+        break;
+    case 38:
+        g_keyInp[2]=false;
+        break;
+    case 40:    
+        g_keyInp[3]=false;
+        break;
+    case 65:
+        g_keyInp[4]=false;
+        break;
+    case 68:
+        g_keyInp[5]=false;
+        break;
+    case 87:
+        g_keyInp[6]=false;
+        break;
+    case 83:
+        g_keyInp[7]=false;
+        break;
+}  
+}
+
+//==============================Canvas Operations================================
+function f_drawBorder(){
+g_ctx.save();
+g_ctx.fillStyle="#ccff66";
+g_ctx.fillRect(0,0,g_can.width,g_can.height);
+g_ctx.restore();
+}
+function f_clearCanvas(){
+   // g_ctx.clearRect(0,0,g_can.width,g_can.height);
+}
+//=================================Class: Border=================================
+function c_border(l_can,l_ctx,l_thickness,l_colour){
+    this.x=0;
+    this.y=0;
+    this.can=l_can;
+    this.ctx=l_ctx;
+    this.m_drawBorder=m_drawBorder;
+    this.thickness=l_thickness;
+    this.width=this.can.width;
+    this.height=this.can.height;
+    this.colour=l_colour;
+    this.tag="border";
+    
+}
+function m_drawBorder(){
+    this.ctx.save();
+    this.ctx.lineWidth=this.thickness;
+    this.ctx.strokeStyle=this.colour;
+    this.ctx.strokeRect(this.x,this.y,this.width,this.height);
+    this.ctx.restore();
+    
+}
+//***********************************Menu****************************************
+function c_menu(l_x,l_y,l_width,l_height,l_menuData,l_startbutton,l_settingsbutton,l_pauseButton,l_homeButton,l_ctx,l_can,l_single,l_two){
+    this.can=l_can;
+    this.width=l_width;
+    this.x=this.can.width/2-this.width/2;
+    this.y=l_y;
+    this.height=l_height;
+    this.menuData=l_menuData;
+    this.ctx=l_ctx;
+    this.isStartGame=false;
+    this.startButton=l_startbutton;
+    this.homeButton=l_homeButton;
+    this.settingsButton=l_settingsbutton;
+    this.m_buttonFeedback=m_buttonFeedback;
+    this.m_drawMenu=m_drawMenu;
+    this.m_runMenu=m_runMenu;
+    this.pauseButton=l_pauseButton;
+    this.singlePlayerButton=l_single;
+    this.twoPlayerButton=l_two;
+    this.label="MAIN MENU";
+}
+function m_runMenu(){
+    this.m_buttonFeedback();
+}
+function m_buttonFeedback(){
+    if(!this.menuData[0]){
+    startButton.m_runButton();
+    settingsButton.m_runButton();
+    homeButton.m_runButton();
+}    
+    pauseButton.m_runButton();
+    if(startButton.isClicked){
+        console.log(this.menuData);
+        this.menuData[0]=true;
+        startButton.isClicked=false;
+    }
+    if(settingsButton.isClicked){
+        this.menuData[1]=true;
+        settingsButton.isClicked=false;
+    }
+    if(pauseButton.isClicked){
+        this.menuData[0]=false;
+        this.pauseButton.isClicked=false;
+    }
+    if(this.menuData[1]){
+        this.twoPlayerButton.m_runButton();
+        this.singlePlayerButton.m_runButton();
+    }
+    if(twoPlayerButton.isClicked){
+        this.menuData[4]=2;
+        this.menuData[0]=true;
+        twoPlayerButton.isClicked=false;
+    } 
+    if(singlePlayerButton.isClicked){
+        this.menuData[4]=1;
+        this.menuData[0]=true;
+        singlePlayerButton.isClicked=false;
+    }
+}
+
+
+function m_drawMenu(){
+    if(this.menuData[0]){
+        this.pauseButton.m_drawButton();
+        return;
+    }
+
+    if(this.homeButton.isClicked){
+        this.homeButton.isClicked=false;
+        this.menuData[1]=false;
+        this.label="MAIN MENU";
+    }
+    if(this.menuData[1]){
+        this.label="SETTINGS";
+       
+        
+       // return;
+    }
+    this.homeButton.x=this.x+this.width/this.homeButton.width;
+    this.homeButton.y=this.y+this.height/1.2;
+    this.startButton.x=this.x+this.width/this.startButton.width
+    this.singlePlayerButton.x=this.x+this.width/this.startButton.width
+    this.singlePlayerButton.y=this.y+this.height/6;
+    this.twoPlayerButton.x=this.x+this.width/this.settingsButton.width
+    this.twoPlayerButton.y=this.y+this.height/2
+    this.settingsButton.x=this.x+this.width/this.settingsButton.width
+    this.startButton.y=this.y+this.height/6
+    this.settingsButton.y=this.y+this.height/2
+    
+    //this.ctx.strokeRect(this.x,this.y,this.width,this.height);
+    this.ctx.fillStyle=`rgba(173,216,230,.9)`
+    this.ctx.fillRect(0,0,this.can.width,this.can.height);
+    this.ctx.fillStyle=`rgba(25,25,112,.5)`
+    this.ctx.fillRect(this.x,this.y,this.width,this.height);
+    this.ctx.font="30px Verdana"
+    this.ctx.fillStyle="black"
+    this.ctx.fillText("SNAKE",this.x+this.width*2/this.label.length,this.y-40)
+    this.ctx.fillStyle="cyan";
+    this.ctx.fillText(this.label,this.x+this.width*2/this.label.length,this.y+40);
+    if(this.menuData[1]){
+        this.homeButton.m_drawButton();
+        this.singlePlayerButton.m_drawButton();
+        this.twoPlayerButton.m_drawButton();
+        return;
+    }
+    this.startButton.m_drawButton();
+    this.settingsButton.m_drawButton();
+}
+//=================================Score Board===================================
+function f_scoreboard(){
+    g_ctx.save();
+    g_ctx.font="30px Arial"
+    g_ctx.fillStyle=`rgba(250,250,250,0.4)`;
+    g_ctx.fillRect(685,65,50,50);
+    if(g_menuData[4]>1)g_ctx.fillRect(85,65,50,50);
+    g_ctx.fillStyle="#fc6c85";
+    g_ctx.fillText(snake1.score,700,100);
+    g_ctx.fillStyle="#1BB3F5";
+    if(g_menuData[4]>1)g_ctx.fillText(snake2.score,100,100);
+    g_ctx.restore();
+}
+//============================ Class: Button====================================
+function c_button(l_x,l_y,l_width,l_height,l_label,l_ctx,l_mouseInp){
+    this.x=l_x;
+    this.y=l_y;
+    this.width=l_width;
+    this.height=l_height;
+    this.ctx=l_ctx;
+    this.label=l_label;
+    this.m_drawButton=m_drawButton;
+    this.m_runButton=m_runButton;
+    this.m_mouseResponseBtn=m_mouseResponseBtn;
+    this.isClick=false;
+    this.isClicked=false;
+    this.isReleased=false;
+    this.colourPerm=`rgba(255,165,0,1)`;
+    this.colour="lime";
+    this.fontColour="white";
+    this.fontColourPerm="white";
+    this.mouseInp=l_mouseInp;
+}
+function m_drawButton(){
+    this.ctx.save();
+    
+    this.ctx.fillStyle=this.colour;
+    this.ctx.fillRect(this.x,this.y,this.width,this.height);
+    this.ctx.fillStyle=this.fontColour;
+    this.ctx.font="20px Arial";
+    this.ctx.fillText(this.label,this.x+this.width/this.label.length,this.y+25,100);
+    //this.ctx.strokeRect(this.x,this.y,this.width,this.height);
+}
+function m_runButton(){
+    this.m_mouseResponseBtn();
+} 
+function m_mouseResponseBtn(){
+    if(this.x<=this.mouseInp[1]&&this.x+this.width>=this.mouseInp[1]&&this.y<=this.mouseInp[2]&&this.y+this.height>=this.mouseInp[2]){
+        this.colour="white";
+        this.fontColour=this.colourPerm;
+        if(g_mouseInp[0]){
+            this.colour="blue";
+            this.fontColour="white";
+            this.isClick=true;
+            this.isReleased=false;
+        }
+        else if(this.isClick){
+            this.isClick=false;
+            this.isReleased=true;
+            this.isClicked=true;
+        }
+    }
+    else {
+        this.colour=this.colourPerm;
+        this.fontColour=this.fontColourPerm;
+    }
+}    
+
+//=================================Class: Square=================================
+function c_square(l_x,l_y,l_width,l_id,l_colour,l_ctx,l_squares,l_xposArr,l_YposArr){
+    this.x=l_x;
+    this.y=l_y;
+    this.width=l_width;
+    this.colour=l_colour;
+    this.ctx=l_ctx;
+    this.m_drawSquare=m_drawSquare;
+    //this.m_moveSquare=m_moveSquare;
+    this.m_runSquare=m_runSquare;
+    this.parent=null;
+    this.id=l_id;
+    this.squareArr=l_squares;
+    this.XposArr=l_xposArr;
+    this.YposArr=l_YposArr;
+}    
+//----------------------------Methods: Square------------------------------------
+function m_drawSquare(){
+    this.ctx.save();
+    this.ctx.strokeStyle="white";
+    this.ctx.lineWidth=3;
+    this.ctx.fillStyle=this.colour;
+    this.ctx.fillRect(this.x,this.y,this.width,this.width);
+    this.ctx.strokeRect(this.x,this.y,this.width,this.width);
+    this.ctx.restore();
+}
+function m_runSquare(){
+    this.colour=this.parent.colour;
+}
+//==============================Class: Snake=====================================
+function c_snake(l_x,l_y,l_colour,l_size,l_ctx,l_input,l_inpRange,l_squareArr,l_id,l_XposArr,l_YposArr,l_border,l_maxLength){
+    this.x=l_x;
+    this.y=l_y;
+    this.colour=l_colour;
+    this.size=l_size;
+    this.ctx=l_ctx;
+    this.input=l_input;
+    this.inpRange=l_inpRange;
+    this.m_drawSnake=m_drawSnake;
+    this.m_runSnake=m_runSnake;
+    this.m_updatePosArr=m_updatePosArr;
+    this.m_initiateSnake=m_initiateSnake;
+    this.isInitiated=false;
+    this.m_positionUpdateSnake=m_positionUpdateSnake;
+    this.m_keyResponseSnake=m_keyResponseSnake;
+    this.m_collisionResponse=m_collisionResponse;
+    this.squareArr=l_squareArr;
+    this.snakeWidth=this.squareArr[0].width;
+    this.XposArr=l_XposArr;
+    this.YposArr=l_YposArr;
+    this.speed=5;
+    this.id=l_id;
+    this.boder=l_border;
+    this.isDestroyed=false;
+    this.maxLength=l_maxLength;
+    this.arrayRange=this.maxLength*this.snakeWidth;
+    this.score=0;
+    this.tag="snake";
+}
+//----------------------------Methods: Snake-------------------------------------
+function m_initiateSnake(){
+   for(i=this.id*this.maxLength;i<this.size+this.maxLength*this.id;i++){ 
+        this.squareArr[i].x=this.XposArr[(i-(this.id*this.maxLength))*this.snakeWidth];
+        this.squareArr[i].y=this.YposArr[(i-(this.id*this.maxLength))*this.snakeWidth];
+       if(this.id=="1"){
+       // console.log(this.XposArr[i])
+       }
+    }
+}
+function m_updatePosArr(l_direction){
+    for(i=0;i<this.speed;i++){  
+    {
+        for(j=0;j<this.XposArr.length-1;j++)
+           {
+              this.YposArr[(this.XposArr.length-1)-j]=this.YposArr[(this.XposArr.length-2)-j];
+              this.XposArr[(this.XposArr.length-1)-j]=this.XposArr[(this.XposArr.length-2)-j];
+           }
+            if(l_direction=="r"){
+                this.XposArr[0]+=1;
+            }
+            else if(l_direction=="l"){
+                this.XposArr[0]-=1;
+            }
+            else if(l_direction=="u"){
+                this.YposArr[0]-=1;
+            }
+            else if(l_direction=="d"){
+                this.YposArr[0]+=1;
+            }
+       }
+    }
+    for(i=this.id*this.maxLength;i<this.size+this.maxLength*this.id;i++){
+       this.squareArr[i].x=this.XposArr[(i-(this.id*this.maxLength))*this.snakeWidth];
+        this.squareArr[i].y=this.YposArr[(i-(this.id*this.maxLength))*this.snakeWidth];
+    }
+    this.x=this.XposArr[0];    
+    this.y=this.YposArr[0];    
+}
+function m_drawSnake(){
+   if(this.isDestroyed){
+       return;
+   }
+    for(i=this.id*this.maxLength;i<this.size+this.id*this.maxLength;i++){
+        this.squareArr[i].m_drawSquare();
+    }
+    this.isInitiated=true;
+}
+function m_runSnake(){
+    if(this.isDestroyed){
+       return;
+   }
+    this.m_collisionResponse();
+    if(!this.isInitiated){
+        this.m_initiateSnake();
+    }
+    this.m_keyResponseSnake();
+    this.m_positionUpdateSnake();
+    for(i=this.id*this.maxLength;i<this.maxLength+this.id*this.maxLength;i++){
+        if(!this.isInitiated){
+           this.squareArr[i].parent=this; 
+        }
+        this.squareArr[i].m_runSquare();
+        //console.log(i);
+        
+    }
+}
+function m_positionUpdateSnake(){
+    //this.XposArr[this.id*10]=this.x;
+    //this.YposArr[this.id*10]=this.y;
+}
+function m_keyResponseSnake(){
+   if(this.input[this.inpRange-3]){
+       this.m_updatePosArr("l");
+   }
+   else if(this.input[this.inpRange-2]){
+        this.m_updatePosArr("r");
+    }
+    if(this.input[this.inpRange-1]){
+        this.m_updatePosArr("u");
+    }
+   else if(this.input[this.inpRange]){
+        this.m_updatePosArr("d");
+    }
+}
+function m_collisionResponse(){
+    
+}
+function m_addPowerUp(l_hash){
+    var l_length=l_hash.length;
+    if(l_hash.charAt(1)=="p"){
+        this.speed=l_hash.cha
+    }
+}
+//==============================Class: PowerUp===================================
+function c_powerUp(l_x,l_y,l_width,l_colourArr,l_minSpeed,l_maxSpeed,l_minLength,l_maxLength,l_life,l_ctx){
+    this.x=l_x;
+    this.y=l_y;
+    this.colourArr=l_colourArr;
+    this.minSpeed=l_minSpeed;
+    this.maxSpeed=l_maxSpeed;
+    this.minLength=l_minLength;
+    this.maxLength=l_maxLength;
+    this.speed=0;
+    this.size=0;
+    this.lifeTime=l_life;
+    this.ctx=l_ctx;
+    this.timer=this.lifeTime;
+    this.m_spawn=m_spawn;
+    this.isActive=false;
+    this.m_runPowerUp=m_runPowerUp;
+    this.m_drawPowerUp=m_drawPowerUp;
+    this.m_blink=m_blink;
+    this.m_setProperties=m_setProperties;
+    this.spawnTime=33*3;
+    this.spawnTimer=this.spawnTime;
+    this.isActive=false;
+    this.width=l_width;
+    this.isVisible=true;
+    this.blinkSpeed=20;
+    this.typeArr=["size","speed"];
+    this.type=this.typeArr[Math.floor(Math.random()*(this.typeArr.length-1))];
+    this.value=10;
+    this.tag="powerUp"
+    this.isPicked=false;
+    
+}
+//------------------------------Methods: PowerUp--------------------------------
+function m_spawn(){
+    if(this.spawnTimer<=0){
+        this.type=this.typeArr[Math.floor(Math.random()*(this.typeArr.length))];
+        this.m_setProperties();
+        this.spawnTimer=this.spawnTime;
+        this.timer=this.lifeTime;
+    }
+    if(this.timer>0){
+        this.timer--;
+        this.isActive=true;
+    }
+    else{
+        this.isActive=false;
+        this.spawnTimer--;
+        }
+}
+function m_setProperties(){
+    this.isPicked=false;
+    switch(this.type){
+        case "size":
+            this.value=Math.floor(Math.random()*(this.maxLength-this.minLength)+this.minLength);
+            return this.value;
+            break;
+        case "speed":
+            this.value=Math.floor(Math.random()*(this.maxSpeed-this.minSpeed)+this.minSpeed);
+            return this.value;
+            break;
+    }
+}
+function m_blink(){
+   
+}
+function m_runPowerUp(){
+    this.m_spawn();
+    if(!this.isActive){
+        this.isVisible=false;
+    }
+    else{
+        this.isVisible=true;
+    this.m_blink();
+    }
+}
+function m_drawPowerUp(){
+   if(!this.isVisible){
+       return
+   }
+    this.ctx.save();
+    this.ctx.fillStyle="red";
+    this.ctx.strokeStyle="white";
+    this.ctx.lineWidth=3;
+    this.ctx.fillRect(this.x,this.y,this.width,this.width);
+    this.ctx.strokeRect(this.x,this.y,this.width,this.width);
+    this.ctx.restore();
+}
+//==============================Game Controller==================================
+function f_gameController(){
+    if(snake1.score>=10){
+     f_winScreen(snake1);   
+    }
+    if(snake2.score>=10){
+     f_winScreen(snake2);   
+    }
+    if(f_collisionDetector(snake1,border)){
+        f_winScreen(snake2);
+    }
+    if(f_collisionDetector(snake1,powerup)){
+        f_powerUpManager(snake1);
+    }
+    if(f_collisionDetector(snake1,"SnakeToBody")){
+        f_winScreen(snake2);
+    }
+    if(g_menuData[4]>1){
+    if(f_collisionDetector(snake1,snake2)){
+        f_winScreen(snake2);
+    }
+    if(f_collisionDetector(snake2,border)){
+        f_winScreen(snake1);
+    }
+    if(f_collisionDetector(snake2,powerup)){
+       f_powerUpManager(snake2);
+    }
+    if(f_collisionDetector(snake2,"SnakeToBody")){
+        f_winScreen(snake1);
+    }
+    
+    if(f_collisionDetector(snake2,snake1)){
+        f_winScreen(snake1);
+    }
+   }
+    if(!powerup.isActive&&!g_newPowerUpSet){
+        powerup.x=Math.random()*(border.width-1.5*border.thickness)+border.thickness/2;
+        powerup.y=Math.random()*(g_can.height-1.5*border.thickness)+border.thickness/2;
+        g_newPowerUpSet=true;
+    }
+    else if(powerup.isActive){
+        g_newPowerUpSet=false;
+    }
+    
+}
+//===========================Function Collision Detection========================
+function f_collisionDetector(l_snake,l_obj){
+    if(l_obj.tag=="border"){
+        if(l_snake.x<l_obj.x+l_obj.thickness/2||l_snake.x+l_snake.snakeWidth>l_obj.width-l_obj.thickness/2){
+            console.log("border");
+            return true;
+        }
+        if(l_snake.y<l_obj.y+l_obj.thickness/2||l_snake.y+l_snake.snakeWidth>l_obj.height-l_obj.thickness/2){
+            return true;
+        }
+    }
+    else if(l_obj.tag=="powerUp"){
+        if(l_snake.x+snake1.snakeWidth>l_obj.x&&l_snake.x<l_obj.x+l_obj.width){
+            if(l_snake.y+snake1.snakeWidth>l_obj.y&&l_snake.y<l_obj.y+l_obj.width){
+            return true;
+            }
+        }
+    }
+    else if(l_obj=="SnakeToBody"){
+        for(i=l_snake.id*g_snakeMaxSize+3;i<l_snake.size+l_snake.id*g_snakeMaxSize;i++){
+            if(l_snake.squareArr[l_snake.id*g_snakeMaxSize].x+l_snake.snakeWidth>l_snake.squareArr[i].x&&l_snake.squareArr[l_snake.id*g_snakeMaxSize].x<l_snake.squareArr[i].x+l_snake.snakeWidth){
+                if(l_snake.squareArr[l_snake.id*g_snakeMaxSize].y+l_snake.snakeWidth>l_snake.squareArr[i].y&&l_snake.squareArr[l_snake.id*g_snakeMaxSize].y<l_snake.squareArr[i].y+l_snake.snakeWidth){
+            return true;
+                }
+            }
+        }
+    }
+    else if(l_obj.tag=="snake"){
+       // console.log(l_obj.squareArr[l_obj.maxLength*l_obj.id].x)
+        for(i=0;i<l_obj.size;i++){
+            if(l_snake.x+l_snake.snakeWidth>l_obj.squareArr[l_obj.maxLength*l_obj.id+i].x&&l_snake.x<l_obj.squareArr[l_obj.maxLength*l_obj.id+i].x+l_obj.snakeWidth){
+                if(l_snake.y+l_snake.snakeWidth>l_obj.squareArr[l_obj.maxLength*l_obj.id+i].y&&l_snake.y<l_obj.squareArr[l_obj.maxLength*l_obj.id+i].y+l_obj.snakeWidth){
+                    return true;
+                }
+            }
+        }
+    }
+}
+//==========================Function PowerUpManager==============================
+function f_powerUpManager(l_snake){
+  if(powerup.isPicked){
+      return;
+  }
+    
+        l_snake.score++;
+        switch(powerup.type){
+            case "speed":
+                l_snake.speed=powerup.value;
+                break;
+            case "size":
+                l_snake.size=powerup.value;
+                l_snake.m_initiateSnake();
+                break;
+        }
+    powerup.isPicked=true;
+    powerup.timer=0;
+}
+//=================================Win Screen====================================
+function f_winScreen(l_snake){
+   if(!g_isGameOver){
+    g_isGameOver=true;
+    g_winner=l_snake;
+    return;
+   }
+    if(g_menuData[4]>1||l_snake==snake1){
+    console.log(l_snake.colour);
+    f_clearCanvas();
+    f_drawBorder();
+    border.m_drawBorder();
+    l_snake.isDestroyed=true;
+    g_ctx.save();
+    g_ctx.font="20px Arial";
+    g_ctx.fillStyle=`rgba(255,255,255,.3)`;
+    g_ctx.fillRect(300,250,200,100);
+    g_ctx.fillStyle="grey";
+    g_ctx.fillText("WINNER",365,320);
+    g_ctx.strokeStyle="green";
+    g_ctx.fillStyle=l_snake.colour;
+    g_ctx.fillRect(355,270,g_squareWidth*5,g_squareWidth);
+    g_ctx.lineWidth=3;
+    for(i=0;i<5;i++){
+    g_ctx.strokeStyle="white";
+    g_ctx.strokeRect(355+g_squareWidth*i,270,g_squareWidth,g_squareWidth);
+    }
+    g_ctx.restore();}
+    else{
+        g_ctx.save();
+        g_ctx.fillStyle="red";  
+        g_ctx.fillText("YOU LOSE",365,320);
+        g_ctx.restore();
+    }
+}
+//==============================Functions Fill===================================
+function f_fillObjects(){
+    for(i=0;i<g_squares.length;i++){
+        g_squares[i]=new c_square(500,100,g_squareWidth,i,"white",g_ctx,g_squares,g_XposArray,g_YposArray);
+    }
+}
+function f_initialisePositionArray(){
+    var l_currentSnake=1;
+    for(i=0;i<g_snakeMaxSize*g_squareWidth;i++){
+       
+        g_XposArray[i]=g_snake1StartX+i; 
+        g_YposArray[i]=g_snake1StartY; 
+        g_XposArray2[i]=g_snake2StartX-i;
+        g_YposArray2[i]=g_snake2StartY;
+    }
+    
+}
+//=================================Fill Objects==================================
+f_fillObjects();
+f_initialisePositionArray();
+console.log(g_XposArray);
+border=new c_border(g_can,g_ctx,30,"#B76EB8");
+snake1=new c_snake(g_snake1StartX,g_snake1StartY,"#fc6c85",g_snakeSize,g_ctx,g_keyInp,3,g_squares,0,g_XposArray,g_YposArray,border,g_snakeMaxSize);
+snake2=new c_snake(g_snake2StartX,g_snake2StartY,"#1BB3F5",g_snakeSize,g_ctx,g_keyInp,7,g_squares,1,g_XposArray2,g_YposArray2,border,g_snakeMaxSize);
+powerup=new c_powerUp(100,100,g_squareWidth,g_colourArray,5,15,3,20,g_fps*5,g_ctx);
+startButton=new c_button(g_can.width/2-50,g_can.height/2-100,150,40,"PLAY",g_ctx,g_mouseInp);
+pauseButton=new c_button(20,20,40,40,"| |",g_ctx,g_mouseInp); 
+settingsButton=new c_button(g_can.width/2-50,g_can.height/2-100,150,40,"SETTINGS",g_ctx,g_mouseInp); 
+homeButton=new c_button(g_can.width/2-50,g_can.height/2-100,100,40,"HOME",g_ctx,g_mouseInp); 
+singlePlayerButton=new c_button(g_can.width/2-50,g_can.height/2-100,100,40,"1 P",g_ctx,g_mouseInp); 
+twoPlayerButton=new c_button(g_can.width/2-50,g_can.height/2-100,100,40,"2 P",g_ctx,g_mouseInp); 
+mainMenu=new c_menu(300,100,250,400,g_menuData,startButton,settingsButton,pauseButton,homeButton,g_ctx,g_can,singlePlayerButton,twoPlayerButton);
+//=================================Game Loop=====================================
+function f_gameLoop(){
+    if(!g_menuData[0]){
+        mainMenu.m_runMenu();
+        mainMenu.m_drawMenu();
+    }
+    else if(!g_isGameOver){  
+    snake1.m_runSnake();
+    snake2.m_runSnake();
+    f_gameController();
+    powerup.m_runPowerUp();
+    f_clearCanvas();
+    f_drawBorder();
+    snake1.m_drawSnake();
+    if(g_menuData[4]>1){
+    snake2.m_drawSnake();
+    }
+    border.m_drawBorder();
+    powerup.m_drawPowerUp();
+    f_scoreboard();
+}
+else{
+    f_winScreen(g_winner);
+}
+}
+
+setInterval(f_gameLoop,g_fps);
+</script>
+
+<h3>Author: Mrunang Shrikant Gharpure</h3>
+    
+    <h3>Controls:</h3>
+
+<ul>
+
+    <li>Use arrow keys to move the Snake</li>
+
+    <li>This can be played as two players(Local Multiplayer), option available in settings</li>
+
+    <li>"wasd" to move the second snake</li>
+    
+</ul>
+    
+<h3>Objective:</h3>
+
+<ul>
+
+    <li>The objective of this game is to eat as many fruits as possible to gain the high score</li>
+
+    <li>The fruit is spawned randomly after a slight delay</li>
+
+    <li>If the snake accidently hits itself, you lose the game</li>
+    
+    <li>If the two snakes collide with each other, the one causing collision loses the game</li>
+    
+    <li>If the snake touches the border you lose the game</li>
+    
+    <li>There are 4 different types of powerups given by the fruit randomly:-</li>
+    
+    <li>1. Increase the length of the snake<br>
+        2. Decrease the length of the snake<br>
+        3. Increase the speed of the snake<br>
+        4. Decrease the speed of the snake<br>
+    </li>
+</ul>
+
+<br /><br />
+
+<h3>Logic Design and Implementation:</h3> 
+
+<ul>
+<li>Use of a single Square class to draw the snake and the fruit. </li>
+
+<li>Use of arrays to increase and the decrease the length of the snake(without chainging the length of the array in runtime)</li>
+    
+<li>Move the snake only when input is provided.</li>
+
+<li>Use of borders as boundries which if touched, ends the game.</li>
+
+<li>Use of simple logic to determine the collision between snake and the border, snake and the fruit, snake and itself, between two snakes(2 Player Mode)</li>
+
+<li>Create variables to hold the score and display the next shape and the shape that's put on hold.</li>
+
+<li>Create logic to determine when the game is over and display it on the screen.</li>
+
+</ul>
+
+<br /><br />
+
+<h3>Scope For Improvement:</h3>
+
+    <ul><li>Implement Audio to the game.</li>
+        <li>Implement different colours to distinguish between the different types of fruits(powerups)</li>
+        <li>Implement Restart</li>
+    </ul>
+
+
+<div id="info-site">
+
+ </div>
+</body>
+</html>
